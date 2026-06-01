@@ -1,15 +1,40 @@
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
+from flask_wtf.csrf import CSRFProtect
+from flask_talisman import Talisman
 from domain import TERMS_VERSION, BANKS, BRAND_RULES, RAW_TRANSACTIONS
 from services.open_finance import create_open_finance_provider
 import os
 import re
 import uuid
+from dotenv import load_dotenv
 
 import state
 
+# Load environment variables from .env file
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "vampiro-secret-dev-key-2026")
+app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get("FLASK_ENV") == "production"
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Security: CSRF Protection
+csrf = CSRFProtect(app)
+
+# Security: Talisman - Security Headers
+Talisman(app, 
+    force_https=os.environ.get("FLASK_ENV") == "production",
+    strict_transport_security=True,
+    strict_transport_security_max_age=31536000,
+    content_security_policy={
+        'default-src': "'self'",
+        'script-src': "'self' 'unsafe-inline'",
+        'style-src': "'self' 'unsafe-inline'",
+        'img-src': "'self' data: https:",
+    }
+)
 
 OPEN_FINANCE_PROVIDER = os.environ.get("OPEN_FINANCE_PROVIDER", "mock")
 OPEN_FINANCE_BASE_URL = os.environ.get("OPEN_FINANCE_BASE_URL", "")
@@ -25,6 +50,19 @@ PUBLIC_ENDPOINTS = {
     "register",
     "static",
 }
+
+# Error handlers for production
+@app.errorhandler(404)
+def not_found(error):
+    return render_template('error.html', error="Página não encontrada"), 404
+
+@app.errorhandler(500)
+def server_error(error):
+    return render_template('error.html', error="Erro interno do servidor"), 500
+
+@app.errorhandler(403)
+def forbidden(error):
+    return render_template('error.html', error="Acesso negado"), 403
 
 
 def money(value):
@@ -814,4 +852,14 @@ def reset():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    flask_env = os.environ.get("FLASK_ENV", "development")
+    debug_mode = flask_env == "development"
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", 5000))
+    
+    if debug_mode:
+        print(f"⚠️  DEBUG MODE ENABLED - Development only!")
+    else:
+        print(f"🔒 PRODUCTION MODE - Debug disabled")
+    
+    app.run(debug=debug_mode, host=host, port=port)
