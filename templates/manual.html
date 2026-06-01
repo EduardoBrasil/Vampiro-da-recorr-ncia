@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Processamento manual - Vampiro da Recorrência{% endblock %}
+
+{% block content %}
+<div class="top-row">
+  <a class="back-btn" href="{{ url_for('dashboard') }}">←</a>
+  <h1 class="page-title" style="font-size:16px;">Processamento manual</h1>
+</div>
+
+<section class="plain-card" style="padding:22px;">
+  <div class="spinner" style="margin-bottom:16px;"></div>
+  <h2 style="margin:0 0 8px;font-size:21px;">Ajude a identificar</h2>
+  <p class="muted" style="line-height:1.55;margin:0 0 16px;">A IA/Regex nao conseguiu limpar o descritor abaixo em 10 segundos. Sua sugestao melhora o motor e rende pontos.</p>
+  <div style="border-radius:14px;background:#eef4fb;padding:12px;font-weight:850;">{{ sub.descriptor }}</div>
+</section>
+
+<form method="post" style="margin-top:20px;display:grid;gap:12px;">
+  <label style="font-size:13px;font-weight:800;">Nome do serviço
+    <input name="service_name" required placeholder="Ex: HBO Max" style="width:100%;height:48px;margin-top:8px;border-radius:14px;border:1px solid #dfe7f0;padding:0 14px;">
+  </label>
+  <button class="primary-btn">Enviar e ganhar 120 pontos</button>
+</form>
+{% endblock %}

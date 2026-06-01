@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Onboarding - Vampiro da Recorrência{% endblock %}
+{% block shell_class %}theme-dark{% endblock %}
+{% block bottom_nav %}{% endblock %}
+
+{% block extra_style %}
+<style>
+  .on-title { margin: 0 0 8px; font-size: 25px; font-weight: 850; }
+  .on-copy { margin: 0; color: rgba(255,255,255,.86); font-size: 14px; line-height: 1.45; }
+  .bank-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin: 28px 0 18px; }
+  .bank-check { position: relative; }
+  .bank-check input { position: absolute; opacity: 0; }
+  .bank-tile {
+    min-height: 112px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 20px;
+    background: rgba(255,255,255,.11);
+    display: grid;
+    place-items: center;
+    gap: 10px;
+    color: #fff;
+    font-weight: 850;
+  }
+  .bank-check input:checked + .bank-tile { outline: 3px solid rgba(255,255,255,.42); background: rgba(255,255,255,.2); }
+  .terms-box {
+    height: 170px;
+    overflow: auto;
+    border-radius: 18px;
+    padding: 16px;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.18);
+    color: rgba(255,255,255,.9);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .terms-box strong { color: #fff; }
+  .inline-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+  .toggle {
+    min-height: 42px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.11);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+  .error-box { margin: 14px 0; border-radius: 14px; background: #ffe5ea; color: #b20718; padding: 12px; font-size: 13px; font-weight: 750; }
+  #accept-btn:disabled { opacity: .45; cursor: not-allowed; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="on-title">Conecte seus bancos</h1>
+<p class="on-copy">Selecione ate 5 instituicoes e aceite os termos de leitura Open Finance. Nada de senhas, pagamentos ou movimentacao.</p>
+
+{% if error %}<div class="error-box">{{ error }}</div>{% endif %}
+
+<form method="post" id="onboarding-form">
+  <section class="bank-grid" aria-label="Selecao multibancos">
+    {% for bank in banks %}
+      <label class="bank-check">
+        <input type="checkbox" name="banks" value="{{ bank.id }}" {% if selected and bank.id in selected %}checked{% endif %}>
+        <span class="bank-tile">
+          <span class="avatar {{ bank.class }}">{{ bank.initials }}</span>
+          <span>{{ bank.name }}</span>
+        </span>
+      </label>
+    {% endfor %}
+  </section>
+
+  <div class="terms-box" id="terms">
+    <p><strong>Termo {{ terms_version }}</strong></p>
+    <p>Voce autoriza o Vampiro da Recorrencia a acessar, em modo somente leitura, dados de contas, cartoes e transacoes recorrentes via Open Finance Brasil.</p>
+    <p>O acesso tem finalidade exclusiva de identificar assinaturas, calcular gastos mensais e anuais, emitir alertas de vencimento e permitir gestao de consentimentos.</p>
+    <p>Nao solicitamos senha bancaria, nao iniciamos pagamentos, nao alteramos transacoes e nao cancelamos servicos em seu nome. Links externos sao apenas atalhos.</p>
+    <p>Os dados sao tratados conforme LGPD. Voce pode revogar consentimentos, solicitar exclusao de dados processados e atualizar seus dados cadastrais a qualquer momento.</p>
+    <p>Ao chegar ao fim deste termo, o botao de aceite sera liberado e registraremos timestamp, versao do termo e bancos selecionados.</p>
+  </div>
+
+  <div class="inline-actions">
+    <label class="toggle"><input type="radio" name="network" value="online" checked> Rede online</label>
+    <label class="toggle"><input type="radio" name="network" value="offline"> Simular sem internet</label>
+  </div>
+
+  <button class="primary-btn" id="accept-btn" type="submit" disabled>Aceitar e continuar</button>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const terms = document.getElementById('terms');
+  const accept = document.getElementById('accept-btn');
+  const checks = [...document.querySelectorAll('input[name="banks"]')];
+  function updateLimit() {
+    const checked = checks.filter(c => c.checked);
+    checks.forEach(c => c.disabled = !c.checked && checked.length >= 5);
+  }
+  checks.forEach(c => c.addEventListener('change', updateLimit));
+  terms.addEventListener('scroll', () => {
+    if (terms.scrollTop + terms.clientHeight >= terms.scrollHeight - 4) accept.disabled = false;
+  });
+  updateLimit();
+</script>
+{% endblock %}

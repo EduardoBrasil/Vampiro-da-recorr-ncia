@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Autorização no Banco - Vampiro da Recorrência{% endblock %}
+{% block content %}
+<div style="margin-bottom: 28px;">
+  <h1 class="connect-title" style="margin:0 0 8px;font-size:25px;">Autorização do Banco</h1>
+  <p class="connect-copy" style="margin:0;color:rgba(0,0,0,.65);font-size:14px;line-height:1.45;">Este é um ambiente de teste que simula a autorização segura do banco.</p>
+</div>
+
+<div class="plain-card" style="padding:24px;">
+  <div style="display:grid;gap:18px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="avatar {{ bank.class }}" style="font-size:18px; width:54px; height:54px;">{{ bank.initials }}</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;">{{ bank.name }}</div>
+        <div class="muted" style="font-size:13px;">Consentimento ID: {{ consent_id }}</div>
+      </div>
+    </div>
+
+    <div style="font-size:14px;line-height:1.6;">O banco recebeu sua solicitação de consentimento e agora solicita sua autorização final. Clique abaixo para confirmar o acesso aos seus dados.</div>
+    <div style="font-family:monospace;background:#f4f7fb;padding:12px;border-radius:12px;color:#10203a;">CPF/CNPJ: {{ cpf_cnpj }}</div>
+
+    <a href="{{ callback_url }}&accessToken=mock_access_token_123" class="primary-btn" style="display:inline-flex;justify-content:center;min-height:44px;">Confirmar no banco</a>
+    <a href="{{ url_for('connections') }}" class="secondary-btn" style="display:inline-flex;justify-content:center;min-height:44px;">Cancelar</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Alertas - Vampiro da Recorrência{% endblock %}
+
+{% block content %}
+<div class="top-row" style="align-items:center;gap:12px;flex-wrap:wrap;">
+  <a class="back-btn" href="{{ url_for('dashboard') }}">←</a>
+  <h1 class="page-title" style="font-size:16px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">Alertas</h1>
+</div>
+
+<div style="margin-bottom:18px;">
+  <form method="post" action="{{ url_for('read_all_notifications') }}" style="display:inline-block;">
+    <button class="secondary-btn" style="width:auto;min-width:170px;min-height:38px;border-radius:12px;font-size:13px;padding:0 16px;">Marcar todos como lidos</button>
+  </form>
+</div>
+
+<section class="item-list">
+  {% for push in pushes %}
+    <article class="plain-card" style="padding:16px;{% if push.read %}opacity:.62;{% endif %}">
+      <div style="display:flex;justify-content:space-between;gap:12px;">
+        <div>
+          <strong>{{ push.title }}</strong>
+          <p class="muted" style="font-size:13px;line-height:1.45;margin:6px 0;">{{ push.body }}</p>
+          <div class="muted" style="font-size:11px;">{{ push.created_at }} · {{ push.fallback }}</div>
+        </div>
+        {% if push.subscription_id %}
+          <a class="chevron" href="{{ url_for('subscription_detail', sub_id=push.subscription_id) }}">›</a>
+        {% endif %}
+      </div>
+      {% if not push.read %}
+        <form method="post" action="{{ url_for('read_notification', push_id=push.id) }}" style="margin-top:12px;">
+          <button class="secondary-btn" style="min-height:38px;border-radius:12px;font-size:13px;">Marcar como lido</button>
+        </form>
+      {% endif %}
+    </article>
+  {% else %}
+    <div class="plain-card" style="padding:24px;text-align:center;color:var(--muted);">Nenhum alerta no momento.</div>
+  {% endfor %}
+</section>
+{% endblock %}

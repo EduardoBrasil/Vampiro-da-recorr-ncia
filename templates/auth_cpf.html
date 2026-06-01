@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Informe seu CPF - Vampiro da Recorrência{% endblock %}
+{% block shell_class %}theme-dark{% endblock %}
+{% block bottom_nav %}{% endblock %}
+
+{% block extra_style %}
+<style>
+  .auth-form { max-width: 380px; margin: 0 auto; }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .form-group input { width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 12px; background: rgba(255,255,255,.08); color: #fff; font-size: 16px; }
+  .form-group input::placeholder { color: rgba(255,255,255,.5); }
+  .form-group input:focus { outline: none; border-color: rgba(36,93,232,.5); background: rgba(36,93,232,.1); }
+  .error-message { background: rgba(255,100,100,.2); border: 1px solid rgba(255,100,100,.5); border-radius: 12px; padding: 12px; font-size: 13px; color: #ffcccc; margin-bottom: 16px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 32px;">
+  <h1 class="connect-title" style="margin:0 0 8px;font-size:25px;">Passo 1: Identifique-se</h1>
+  <p class="connect-copy" style="margin:0;color:rgba(255,255,255,.86);font-size:14px;line-height:1.45;">Informe seu CPF ou CNPJ para autorizar o acesso aos seus dados bancários nos seguintes bancos:</p>
+</div>
+
+{% if selected_banks %}
+<div style="display: grid; gap: 10px; margin-bottom: 28px;">
+  {% for bank in selected_banks %}
+    <div style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(255,255,255,.05);">
+      <div class="avatar {{ bank.class }}" style="font-size: 14px;">{{ bank.initials }}</div>
+      <div>
+        <strong style="font-size: 14px;">{{ bank.name }}</strong>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if error %}
+<div class="error-message">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('auth_collect_cpf') }}" class="auth-form">
+  <div class="form-group">
+    <label for="cpf_cnpj">CPF ou CNPJ</label>
+    <input type="text" id="cpf_cnpj" name="cpf_cnpj" placeholder="000.000.000-00" required autofocus>
+    <div class="muted" style="font-size: 12px; margin-top: 6px;">Digite com ou sem formatação. Serão aceitos 11 dígitos (CPF) ou 14 dígitos (CNPJ).</div>
+  </div>
+  <button type="submit" class="primary-btn" style="width: 100%; min-height: 44px;">Continuar</button>
+</form>
+
+<div class="muted" style="font-size: 12px; margin-top: 24px; text-align: center; line-height: 1.6;">
+  <strong>Segurança:</strong><br>
+  Seu CPF/CNPJ será usado apenas para criar um consentimento autorizado pelo Banco Central. Você controlará todo o acesso aos seus dados.
+</div>
+{% endblock %}

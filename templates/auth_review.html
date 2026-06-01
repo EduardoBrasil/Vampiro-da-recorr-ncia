@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Revisar Consentimento - Vampiro da Recorrência{% endblock %}
+{% block shell_class %}theme-dark{% endblock %}
+{% block bottom_nav %}{% endblock %}
+
+{% block extra_style %}
+<style>
+  .consent-card { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+  .consent-card strong { display: block; margin-bottom: 8px; }
+  .consent-detail { display: grid; gap: 12px; margin: 16px 0; }
+  .consent-item { display: flex; gap: 12px; padding: 10px; background: rgba(255,255,255,.05); border-radius: 10px; font-size: 13px; }
+  .consent-item::before { content: "✓"; font-weight: 700; color: #4ade80; min-width: 20px; }
+  .action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 28px;">
+  <h1 class="connect-title" style="margin:0 0 8px;font-size:25px;">Passo 2: Revisar Consentimento</h1>
+  <p class="connect-copy" style="margin:0;color:rgba(255,255,255,.86);font-size:14px;line-height:1.45;">Revise as permissões que você está concedendo. Você poderá revogar este consentimento a qualquer momento.</p>
+</div>
+
+<div class="consent-card">
+  <strong>Quem pediu acesso?</strong>
+  <div style="font-size: 14px;">Vampiro da Recorrência</div>
+  <div class="muted" style="font-size: 12px; margin-top: 4px;">Aplicação de gestão de assinaturas recorrentes</div>
+</div>
+
+<div class="consent-card">
+  <strong>Qual banco?</strong>
+  <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+    <div class="avatar {{ bank.class }}" style="font-size: 16px;">{{ bank.initials }}</div>
+    <div>
+      <div style="font-size: 14px; font-weight: 700;">{{ bank.name }}</div>
+      <div class="muted" style="font-size: 12px;">Você será redirecionado para autenticar de forma segura neste banco.</div>
+    </div>
+  </div>
+</div>
+
+<div class="consent-card">
+  <strong>Quais dados serão compartilhados?</strong>
+  <div class="consent-detail">
+    <div class="consent-item">Saldo em contas correntes e poupança</div>
+    <div class="consent-item">Histórico de transações (últimos 12 meses)</div>
+    <div class="consent-item">Informações de cartões de crédito</div>
+    <div class="consent-item">Transações em cartões de crédito</div>
+  </div>
+</div>
+
+<div class="consent-card">
+  <strong>Por quanto tempo?</strong>
+  <div style="font-size: 14px; margin-top: 8px;">{{ consent_validity_days }} dias (máximo de 12 meses)</div>
+  <div class="muted" style="font-size: 12px; margin-top: 6px;">Conforme regulação do Banco Central do Brasil, a validade máxima é de 12 meses. Você pode renovar ou revogar quando desejar.</div>
+</div>
+
+<div class="consent-card">
+  <strong>Seu identificador</strong>
+  <div style="font-family: monospace; font-size: 12px; background: rgba(0,0,0,.3); padding: 8px; border-radius: 6px; margin-top: 8px; word-break: break-all; color: rgba(255,255,255,.8);">{{ cpf_cnpj }}</div>
+</div>
+
+<div class="action-buttons">
+  <form method="post" action="{{ url_for('auth_confirm_consent', bank_id=bank.id) }}" style="grid-column: 1;">
+    <button type="submit" class="primary-btn" style="width: 100%; min-height: 44px;">Autorizar acesso</button>
+  </form>
+  <a href="{{ url_for('connections') }}" class="secondary-btn" style="min-height: 44px; display: flex; align-items: center; justify-content: center; grid-column: 2;">Cancelar</a>
+</div>
+
+<div class="muted" style="font-size: 11px; margin-top: 20px; text-align: center; line-height: 1.6;">
+  ⚠️ Você será redirecionado para um ambiente seguro do {{ bank.name }}.<br>
+  Suas credenciais de login nunca serão compartilhadas com a Vampiro da Recorrência.<br>
+  Use apenas os botões acima, não copie URLs.
+</div>
+{% endblock %}
