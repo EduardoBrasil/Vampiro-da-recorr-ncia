@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Perfil - Vampiro da Recorrência{% endblock %}
+
+{% block extra_style %}
+<style>
+  .field { display:grid; gap:7px; font-size:13px; font-weight:850; }
+  .field input { height:48px; border-radius:14px; border:1px solid #dfe7f0; padding:0 14px; }
+  .error { border-radius:14px; background:#ffe8ec; color:#9a0616; padding:12px; font-size:13px; font-weight:750; }
+  .ok { border-radius:14px; background:#e5fbf1; color:#08784a; padding:12px; font-size:13px; font-weight:750; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="top-row">
+  <a class="back-btn" href="{{ url_for('dashboard') }}">←</a>
+  <h1 class="page-title" style="font-size:16px;">Perfil</h1>
+</div>
+
+{% if error %}<div class="error">⚠ {{ error }}</div>{% endif %}
+{% if saved %}<div class="ok">Dados salvos com sucesso.</div>{% endif %}
+
+<form method="post" class="plain-card" style="padding:18px;display:grid;gap:14px;margin-top:16px;">
+  <label class="field">Nome
+    <input name="name" required value="{{ profile.name }}">
+  </label>
+  <label class="field">E-mail
+    <input id="email" name="email" required value="{{ profile.email }}">
+    <span id="email-msg" class="muted" style="font-size:12px;"></span>
+  </label>
+  <button class="primary-btn" id="save-btn">Salvar alterações</button>
+</form>
+
+<a class="secondary-btn" style="margin-top:14px;" href="{{ url_for('logout') }}">Sair do app</a>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const email = document.getElementById('email');
+  const msg = document.getElementById('email-msg');
+  const save = document.getElementById('save-btn');
+  function validate() {
+    const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value);
+    msg.textContent = ok ? 'Formato valido.' : '⚠ E-mail mal formatado.';
+    msg.style.color = ok ? '#08784a' : '#9a0616';
+    save.disabled = !ok;
+  }
+  email.addEventListener('input', validate);
+  validate();
+</script>
+{% endblock %}

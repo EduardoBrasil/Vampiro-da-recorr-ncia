@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Erro de conexão - Vampiro da Recorrência{% endblock %}
+
+{% block content %}
+<div class="top-row">
+  <a class="back-btn" href="{{ url_for('auth') }}">←</a>
+  <h1 class="page-title" style="font-size:16px;">Conexão falhou</h1>
+</div>
+
+<section class="plain-card" style="padding:22px;">
+  <div class="avatar {{ bank.class }}" style="margin-bottom:18px;">{{ bank.initials }}</div>
+  <h2 style="margin:0 0 8px;font-size:22px;">{{ bank.name }} indisponivel</h2>
+  <p class="muted" style="line-height:1.55;margin:0 0 18px;">A API do banco retornou instabilidade externa. Mantivemos a sessao em modo leitura com dados em cache e criamos um alerta persistente para voce tentar novamente.</p>
+  <span class="chip chip-danger">Dados nao atualizados recentemente</span>
+</section>
+
+<form method="post" action="{{ url_for('retry_connection', bank_id=bank.id) }}" style="margin-top:24px;">
+  <button class="primary-btn">Tentar novamente</button>
+</form>
+{% endblock %}

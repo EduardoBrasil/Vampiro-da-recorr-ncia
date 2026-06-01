@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Detalhes - Vampiro da Recorrência{% endblock %}
+
+{% block extra_style %}
+<style>
+  .detail-card { padding:24px; display:grid; grid-template-columns:64px 1fr; gap:16px; align-items:center; margin-bottom:26px; }
+  .detail-card .avatar { width:64px; height:64px; border-radius:15px; font-size:32px; }
+  .descriptor { margin-top:4px; color:#354765; font-size:11px; letter-spacing:.02em; }
+  .detail-metrics { grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; }
+  .metric { min-height:64px; border-radius:16px; background:#eef4fb; padding:12px; }
+  .metric-label { color:#41516a; font-size:11px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:9px; }
+  .metric-value { font-size:14px; font-weight:800; }
+  .history { overflow:hidden; margin-top:12px; }
+  .history-row { height:45px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; border-bottom:1px solid #dfe7f0; color:#31415d; font-size:14px; }
+  .history-row:last-child { border-bottom:0; }
+  .history-row strong { color:#061026; }
+  .overlay { position:fixed; inset:0; z-index:35; display:none; align-items:flex-end; justify-content:center; background:rgba(5,13,28,.38); }
+  .overlay.open { display:flex; }
+  .sheet { width:min(100%,448px); border-radius:24px 24px 0 0; background:#fff; padding:24px 24px 20px; }
+  .sheet-top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; }
+  .sheet-service { display:flex; align-items:center; gap:12px; }
+  .sheet-service .avatar { width:48px; height:48px; border-radius:15px; font-size:22px; }
+  .success-mark { width:56px; height:56px; margin:8px auto 22px; border-radius:50%; display:grid; place-items:center; background:#d9f8eb; }
+  .success-mark span { width:27px; height:27px; border-radius:50%; border:3px solid #0aaa66; color:#0aaa66; display:grid; place-items:center; font-weight:900; }
+  .link-error { background:#ffe8ec; color:#9a0616; border-radius:14px; padding:12px; font-size:13px; line-height:1.45; margin-bottom:14px; text-align:left; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="top-row">
+  <a class="back-btn" href="{{ url_for('dashboard') }}" aria-label="Voltar">←</a>
+  <h1 class="page-title" style="font-size:16px;">Detalhes</h1>
+</div>
+
+<article class="plain-card detail-card">
+  <div class="avatar {{ sub.logo_class }}">{{ sub.initial }}</div>
+  <div>
+    <h2 style="margin:0;font-size:22px;line-height:1.1;">{{ sub.clean_name }}</h2>
+    <div class="descriptor">Identificado como {{ sub.descriptor }}</div>
+  </div>
+  <div class="detail-metrics">
+    <div class="metric"><div class="metric-label">Categoria</div><div class="metric-value">{{ sub.category|capitalize }}</div></div>
+    <div class="metric"><div class="metric-label">Cobrança mensal</div><div class="metric-value">{{ sub.amount|money }}</div></div>
+  </div>
+</article>
+
+<h2 style="font-size:14px;margin:0 0 12px;">Histórico de cobranças</h2>
+<section class="plain-card history">
+  <div class="history-row"><span>01/05/2026</span><strong>{{ sub.amount|money }}</strong></div>
+  <div class="history-row"><span>01/04/2026</span><strong>{{ sub.amount|money }}</strong></div>
+  <div class="history-row"><span>01/03/2026</span><strong>{{ sub.amount|money }}</strong></div>
+</section>
+
+<a class="primary-btn" style="margin-top:32px;" href="{{ url_for('subscription_detail', sub_id=sub.id, sheet='cancel') }}">Quero Cancelar Este Serviço ↗</a>
+
+<div class="overlay {% if sheet == 'cancel' %}open{% endif %}">
+  <section class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-top">
+      <div class="sheet-service">
+        <div class="avatar {{ sub.logo_class }}">{{ sub.initial }}</div>
+        <div><h2 style="margin:0;font-size:18px;">Redirecionando...</h2><div class="muted" style="font-size:12px;margin-top:2px;">Página oficial de cancelamento</div></div>
+      </div>
+      <a class="circle-btn" href="{{ url_for('subscription_detail', sub_id=sub.id) }}">×</a>
+    </div>
+    {% if link_error %}
+      <div class="link-error">O link de cancelamento externo está indisponível. Recomendamos ir diretamente ao site do serviço.</div>
+      <button class="secondary-btn" onclick="navigator.clipboard?.writeText('{{ sub.cancel_url }}'); toast('Link oficial copiado')">Copiar Link Oficial</button>
+    {% else %}
+      <p class="muted" style="font-size:14px;line-height:1.6;margin:0 0 16px;">Abriremos o link direto em uma nova aba. Quando terminar, volte aqui para confirmar a remoção.</p>
+      <a class="primary-btn" href="{{ url_for('external_cancel', sub_id=sub.id) }}" target="_blank" rel="noopener">Abrir cancelamento oficial</a>
+    {% endif %}
+    <form action="{{ url_for('optimize_subscription', sub_id=sub.id) }}" method="post" style="margin-top:10px;">
+      <button class="dark-btn" type="submit">Já cancelei / Otimizei o gasto</button>
+    </form>
+    <a class="secondary-btn" style="margin-top:10px;" href="{{ url_for('subscription_detail', sub_id=sub.id) }}">Voltar</a>
+  </section>
+</div>
+
+<div class="overlay {% if sheet == 'success' %}open{% endif %}">
+  <section class="sheet" role="dialog" aria-modal="true" style="text-align:center;">
+    <a class="circle-btn" style="margin-left:auto;" href="{{ url_for('dashboard') }}">×</a>
+    <div class="success-mark"><span>✓</span></div>
+    <h2 style="font-size:18px;margin:0 0 10px;">Tudo certo!</h2>
+    <p class="muted" style="font-size:14px;line-height:1.45;margin:0 0 16px;">Removemos <strong>{{ sub.clean_name }}</strong> dos seus gastos ativos. O total foi atualizado.</p>
+    {% if saved_monthly is not none and saved_annual is not none %}
+      <div class="plain-card" style="background:#f4f7fb;color:#10203a;padding:16px;border-radius:16px;margin-bottom:18px;">
+        <div style="font-size:13px;color:#41516a;margin-bottom:8px;">Economia estimada</div>
+        <div style="font-size:18px;font-weight:700;">{{ saved_monthly|money }} / mês</div>
+        <div style="font-size:13px;color:#41516a;">{{ saved_annual|money }} por ano</div>
+      </div>
+    {% endif %}
+    <a class="primary-btn" href="{{ url_for('dashboard') }}">Voltar ao Dashboard</a>
+  </section>
+</div>
+{% endblock %}

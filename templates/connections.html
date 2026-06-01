@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Conexões - Vampiro da Recorrência{% endblock %}
+
+{% block content %}
+<div class="top-row">
+  <a class="back-btn" href="{{ url_for('dashboard') }}">←</a>
+  <h1 class="page-title" style="font-size:16px;">Conexões</h1>
+</div>
+
+{% if consent %}
+<section class="plain-card" style="padding:16px;margin-bottom:16px;">
+  <strong>Consentimento LGPD</strong>
+  <div class="muted" style="font-size:12px;margin-top:5px;">Versão {{ consent.terms_version }} registrada em {{ consent.timestamp }}</div>
+</section>
+{% endif %}
+
+<section class="item-list">
+  {% for bank in connected_banks %}
+    <article class="plain-card" style="padding:16px;display:grid;grid-template-columns:48px 1fr;gap:13px;align-items:center;">
+      <div class="avatar {{ bank.class }}">{{ bank.initials }}</div>
+      <div>
+        <div class="sub-title">{{ bank.name }}</div>
+        <div class="muted" style="font-size:12px;margin-top:4px;">Conectado em {{ bank.connected_at }}. Válido até {{ bank.valid_until }}.</div>
+        <div class="chip-row" style="margin-top:10px;">
+          {% if bank.status == "expiring" %}<span class="chip chip-warning">Expirando em {{ bank.days_valid }} dias</span>{% else %}<span class="chip chip-outline">Ativo</span>{% endif %}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+          <form method="post" action="{{ url_for('reauthorize_connection', bank_id=bank.id) }}"><button class="secondary-btn" style="min-height:38px;border-radius:12px;font-size:13px;">Reautorizar</button></form>
+          <form method="post" action="{{ url_for('revoke_connection', bank_id=bank.id) }}"><button class="secondary-btn" style="min-height:38px;border-radius:12px;font-size:13px;">Revogar</button></form>
+        </div>
+      </div>
+    </article>
+  {% else %}
+    <div class="plain-card" style="padding:24px;text-align:center;"><p class="muted">Nenhuma conexão ativa.</p><a class="primary-btn" href="{{ url_for('onboarding') }}">Conectar bancos</a></div>
+  {% endfor %}
+</section>
+
+{% if available_banks %}
+  <section class="plain-card" style="padding:16px;margin-bottom:16px;">
+    <strong>Adicionar novos bancos</strong>
+    <p class="muted" style="font-size:12px;margin-top:5px;">Conecte outros bancos para encontrar mais assinaturas recorrentes.</p>
+    <form method="post" action="{{ url_for('connections_add') }}">
+      <div style="display:grid;gap:10px;margin-top:14px;">
+        {% for bank in available_banks %}
+          <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #e8eef5;border-radius:14px;cursor:pointer;">
+            <input type="checkbox" name="banks" value="{{ bank.id }}">
+            <div>
+              <div style="font-weight:700;">{{ bank.name }}</div>
+              <div class="muted" style="font-size:12px;">{{ bank.initials }} • {{ bank.id }}</div>
+            </div>
+          </label>
+        {% endfor %}
+      </div>
+      <button class="primary-btn" style="margin-top:16px;">Adicionar bancos</button>
+    </form>
+  </section>
+{% endif %}
+
+{% if failed_banks %}
+  <section class="plain-card" style="padding:16px;margin-top:16px;background:#ffe8ec;">
+    <strong>Conexão Expirada ou Falhou</strong>
+    <p style="font-size:13px;line-height:1.45;margin:6px 0 0;">O banco afetado foi ignorado no dashboard ate nova autorizacao.</p>
+  </section>
+{% endif %}
+{% endblock %}

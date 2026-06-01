@@ -1,0 +1,591 @@
+{% extends "base.html" %}
+{% block title %}Open Finance Playground — SubShield{% endblock %}
+
+{% block extra_style %}
+<style>
+.pg-header { margin-bottom: 28px; }
+.pg-header h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+.pg-header p { color: var(--muted); font-size: 14px; margin-top:4px; line-height:1.6; }
+
+.pg-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+}
+
+.pg-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.pg-panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pg-panel-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.endpoint-list { padding: 12px; }
+.endpoint-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+}
+.endpoint-item:hover { background: rgba(139,92,246,0.06); border-color: rgba(139,92,246,0.1); }
+.endpoint-item.active { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.2); }
+
+.method-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.method-get  { background: rgba(34,197,94,0.15); color: #4ade80; }
+.method-post { background: rgba(139,92,246,0.15); color: var(--purple2); }
+
+.endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text); }
+.endpoint-desc { font-size: 11px; color: var(--muted); }
+
+.console-area {
+  padding: 20px;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.req-block, .res-block {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.block-header {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.block-header .dot { width: 6px; height: 6px; border-radius: 50%; }
+.dot-green  { background: var(--green); }
+.dot-purple { background: var(--purple); }
+.dot-red    { background: var(--red); }
+
+.code-view {
+  padding: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #a5b4fc;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  min-height: 80px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.sim-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.response-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.status-ok  { background: rgba(34,197,94,0.15); color: #4ade80; }
+.status-err { background: rgba(239,68,68,0.15);  color: #f87171; }
+
+.flow-map {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 20px;
+}
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.flow-step:last-child { border-bottom: none; }
+.flow-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(139,92,246,0.15);
+  border: 1px solid rgba(139,92,246,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--purple2);
+  flex-shrink: 0;
+}
+.flow-text { flex: 1; }
+.flow-us { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--purple2); margin-left: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pg-header">
+  <h2>🧪 Open Finance Playground</h2>
+  <p>
+    Console interativo para testar os endpoints Open Finance conforme o guia prático do
+    <a href="https://juspay.io/pt-br/open-finance" target="_blank" style="color:var(--purple2);">Juspay × Cumbuca</a>.
+    Cada chamada aqui corresponde a uma User Story do escopo do SubShield MVP.
+  </p>
+</div>
+
+<div class="pg-grid">
+  <!-- Sidebar de endpoints -->
+  <div>
+    <div class="pg-panel">
+      <div class="pg-panel-header">
+        <span>📡</span>
+        <span class="pg-panel-title">Endpoints Open Finance</span>
+      </div>
+      <div class="endpoint-list">
+        <div class="endpoint-item active" onclick="loadEndpoint('consent_create')">
+          <span class="method-badge method-post">POST</span>
+          <div>
+            <div class="endpoint-path">/consents</div>
+            <div class="endpoint-desc">Criar consentimento (US02)</div>
+          </div>
+        </div>
+        <div class="endpoint-item" onclick="loadEndpoint('consent_get')">
+          <span class="method-badge method-get">GET</span>
+          <div>
+            <div class="endpoint-path">/consents/{id}</div>
+            <div class="endpoint-desc">Status do consentimento (US04)</div>
+          </div>
+        </div>
+        <div class="endpoint-item" onclick="loadEndpoint('accounts_list')">
+          <span class="method-badge method-get">GET</span>
+          <div>
+            <div class="endpoint-path">/accounts</div>
+            <div class="endpoint-desc">Listar contas (US10)</div>
+          </div>
+        </div>
+        <div class="endpoint-item" onclick="loadEndpoint('transactions')">
+          <span class="method-badge method-get">GET</span>
+          <div>
+            <div class="endpoint-path">/accounts/{id}/transactions</div>
+            <div class="endpoint-desc">Transações → detecção vampiros (US08)</div>
+          </div>
+        </div>
+        <div class="endpoint-item" onclick="loadEndpoint('credit_cards')">
+          <span class="method-badge method-get">GET</span>
+          <div>
+            <div class="endpoint-path">/credit-cards-accounts/{id}/bills</div>
+            <div class="endpoint-desc">Faturas de cartão (US08)</div>
+          </div>
+        </div>
+        <div class="endpoint-item" onclick="loadEndpoint('error_sim')">
+          <span class="method-badge method-get">GET</span>
+          <div>
+            <div class="endpoint-path">/[503 simulation]</div>
+            <div class="endpoint-desc">Simular erro de API (US06)</div>
+          </div>
+        </div>
+        <div class="endpoint-item" onclick="loadEndpoint('local_subs')">
+          <span class="method-badge method-get">GET</span>
+          <div>
+            <div class="endpoint-path">/api/subscriptions</div>
+            <div class="endpoint-desc">SubShield local (mock)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fluxo de chamadas -->
+    <div class="flow-map">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Fluxo de autenticação OF</div>
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-text">Gerar payload de consentimento</div>
+        <div class="flow-us">US02</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-text">Deep Link → app do banco</div>
+        <div class="flow-us">US03</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-text">Biometria + retorno OAuth</div>
+        <div class="flow-us">US03</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-text">Access token → buscar transações</div>
+        <div class="flow-us">US08</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div class="flow-text">Engine higieniza descriptors</div>
+        <div class="flow-us">US08/09</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">6</div>
+        <div class="flow-text">Dashboard consolidado</div>
+        <div class="flow-us">US10</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Console -->
+  <div class="pg-panel">
+    <div class="pg-panel-header" style="justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span>💻</span>
+        <span class="pg-panel-title" id="console-title">Console · POST /consents</span>
+      </div>
+      <div class="sim-controls">
+        <button class="btn btn-primary" style="font-size:12px;padding:6px 14px;" onclick="runCall()">
+          ▶ Executar
+        </button>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="clearConsole()">
+          ✕ Limpar
+        </button>
+      </div>
+    </div>
+
+    <div class="console-area">
+      <div class="req-block">
+        <div class="block-header">
+          <div class="dot dot-purple"></div>
+          REQUEST
+        </div>
+        <div class="code-view" id="req-view">
+{
+  "method": "POST",
+  "url": "https://api.bancocentral.gov.br/open-finance/v2/consents",
+  "headers": {
+    "Authorization": "Bearer {access_token}",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "data": {
+      "permissions": [
+        "ACCOUNTS_READ",
+        "CREDIT_CARDS_ACCOUNTS_READ",
+        "RESOURCES_READ"
+      ],
+      "expirationDateTime": "2027-05-30T00:00:00Z",
+      "loggedUser": {
+        "document": {
+          "identification": "***.***.***-**",
+          "rel": "CPF"
+        }
+      }
+    }
+  }
+}</div>
+      </div>
+
+      <div class="res-block">
+        <div class="block-header" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="dot dot-green"></div>
+            RESPONSE
+          </div>
+          <span class="response-status status-ok" id="status-badge">200 OK</span>
+        </div>
+        <div class="code-view" id="res-view">
+{
+  "data": {
+    "consentId": "urn:bancocentral:consent:12abc34-xxxx",
+    "status": "AWAITING_AUTHORISATION",
+    "creationDateTime": "2026-05-30T10:00:00Z",
+    "expirationDateTime": "2027-05-30T00:00:00Z",
+    "permissions": [
+      "ACCOUNTS_READ",
+      "CREDIT_CARDS_ACCOUNTS_READ"
+    ],
+    "links": {
+      "self": "https://api.bancocentral.gov.br/open-finance/v2/consents/urn:..."
+    }
+  }
+}</div>
+      </div>
+
+      <div style="font-size:12px;color:var(--muted);line-height:1.7;padding:0 4px;">
+        💡 <strong style="color:var(--text);">Referência:</strong>
+        Baseado na especificação Open Finance Brasil — 
+        <a href="https://juspay-2.gitbook.io/open-finance/pt" target="_blank" style="color:var(--purple2);">
+          juspay-2.gitbook.io/open-finance/pt
+        </a>
+        · Simulador ao vivo:
+        <a href="https://juspay.io/open-finance/mobileViewContainer" target="_blank" style="color:var(--purple2);">
+          juspay.io/open-finance/mobileViewContainer
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Simulador externo embed notice -->
+<div class="card" style="margin-top:20px;padding:20px 24px;display:flex;align-items:center;gap:20px;">
+  <div style="font-size:32px;">📱</div>
+  <div style="flex:1;">
+    <strong style="font-family:'Syne',sans-serif;">Simulador completo do Open Finance Playground</strong>
+    <p style="font-size:13px;color:var(--muted);margin-top:4px;line-height:1.6;">
+      O Juspay × Cumbuca mantém um simulador mobile interativo com visualização de cada chamada de API
+      do fluxo de consentimento e PISP. Veja cada passo da jornada do usuário com a trilha de auditoria ao vivo.
+    </p>
+  </div>
+  <a href="https://juspay.io/open-finance/mobileViewContainer" target="_blank" class="btn btn-primary" style="flex-shrink:0;">
+    🚀 Abrir simulador
+  </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ENDPOINTS = {
+  consent_create: {
+    title: "Console · POST /consents",
+    req: `{
+  "method": "POST",
+  "url": "https://api.bancocentral.gov.br/open-finance/v2/consents",
+  "headers": {
+    "Authorization": "Bearer {access_token}",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "data": {
+      "permissions": [
+        "ACCOUNTS_READ",
+        "CREDIT_CARDS_ACCOUNTS_READ",
+        "RESOURCES_READ"
+      ],
+      "expirationDateTime": "2027-05-30T00:00:00Z"
+    }
+  }
+}`,
+    res: `{
+  "data": {
+    "consentId": "urn:bancocentral:consent:12abc34-xxxx",
+    "status": "AWAITING_AUTHORISATION",
+    "creationDateTime": "2026-05-30T10:00:00Z",
+    "permissions": ["ACCOUNTS_READ", "CREDIT_CARDS_ACCOUNTS_READ"],
+    "links": { "self": "https://api.bancocentral.gov.br/..." }
+  }
+}`,
+    status: "201 CREATED",
+    statusClass: "status-ok"
+  },
+  consent_get: {
+    title: "Console · GET /consents/{consentId}",
+    req: `{
+  "method": "GET",
+  "url": "https://api.bancocentral.gov.br/open-finance/v2/consents/{consentId}",
+  "headers": {
+    "Authorization": "Bearer {access_token}"
+  }
+}`,
+    res: `{
+  "data": {
+    "consentId": "urn:bancocentral:consent:12abc34-xxxx",
+    "status": "AUTHORISED",
+    "creationDateTime": "2026-05-30T10:00:00Z",
+    "expirationDateTime": "2027-05-30T00:00:00Z",
+    "permissions": ["ACCOUNTS_READ", "CREDIT_CARDS_ACCOUNTS_READ"],
+    "statusUpdateDateTime": "2026-05-30T10:02:33Z"
+  }
+}`,
+    status: "200 OK",
+    statusClass: "status-ok"
+  },
+  accounts_list: {
+    title: "Console · GET /accounts",
+    req: `{
+  "method": "GET",
+  "url": "https://api.banco.com.br/open-banking/accounts/v2/accounts",
+  "headers": {
+    "Authorization": "Bearer {consent_access_token}",
+    "x-fapi-interaction-id": "uuid-v4-aqui"
+  }
+}`,
+    res: `{
+  "data": [
+    {
+      "brandName": "Nubank",
+      "companyCnpj": "18236120000158",
+      "type": "CONTA_DEPOSITO_A_VISTA",
+      "compeCode": "260",
+      "branchCode": "0001",
+      "number": "****4521",
+      "accountId": "acc_nubank_001"
+    }
+  ],
+  "links": { "self": "..." },
+  "meta": { "totalRecords": 1, "totalPages": 1 }
+}`,
+    status: "200 OK",
+    statusClass: "status-ok"
+  },
+  transactions: {
+    title: "Console · GET /accounts/{id}/transactions",
+    req: `{
+  "method": "GET",
+  "url": "https://api.banco.com.br/open-banking/accounts/v2/accounts/acc_001/transactions?fromBookingDate=2026-01-01&toBookingDate=2026-05-30",
+  "headers": {
+    "Authorization": "Bearer {consent_access_token}"
+  }
+}`,
+    res: `{
+  "data": [
+    {
+      "transactionId": "txn_001",
+      "completedAuthorisedPaymentType": "LANCAMENTO_DEBITO",
+      "creditDebitType": "DEBITO",
+      "transactionName": "NETFLIX.COM_BR*STRM",
+      "amount": { "amount": "44.90", "currency": "BRL" },
+      "transactionDate": "2026-05-15",
+      "type": "PIX"
+    },
+    {
+      "transactionId": "txn_002",
+      "transactionName": "SPOTIFYAB*SPOTIFY",
+      "amount": { "amount": "34.90", "currency": "BRL" },
+      "transactionDate": "2026-05-03"
+    }
+  ]
+}`,
+    status: "200 OK",
+    statusClass: "status-ok"
+  },
+  credit_cards: {
+    title: "Console · GET /credit-cards-accounts/{id}/bills",
+    req: `{
+  "method": "GET",
+  "url": "https://api.banco.com.br/open-banking/credit-cards-accounts/v2/accounts/{creditCardAccountId}/bills",
+  "headers": {
+    "Authorization": "Bearer {consent_access_token}"
+  }
+}`,
+    res: `{
+  "data": [
+    {
+      "billId": "bill_may2026",
+      "dueDate": "2026-06-15",
+      "billTotalAmount": { "amount": "892.40", "currency": "BRL" },
+      "isInstalment": false,
+      "financeCharges": [],
+      "payments": [
+        { "valueType": "VALOR_PAGAMENTO_FATURA_PARCELA", "paymentDate": "2026-05-10", "paymentDue": { "amount": "892.40", "currency": "BRL" } }
+      ]
+    }
+  ]
+}`,
+    status: "200 OK",
+    statusClass: "status-ok"
+  },
+  error_sim: {
+    title: "Console · GET /api/error-simulation (US06)",
+    req: `{
+  "method": "GET",
+  "url": "/api/error-simulation",
+  "description": "Simula resposta HTTP 503 de API bancária instável"
+}`,
+    res: null,  // busca do servidor
+    status: "503 SERVICE_UNAVAILABLE",
+    statusClass: "status-err",
+    fetchUrl: "/api/error-simulation"
+  },
+  local_subs: {
+    title: "Console · GET /api/subscriptions (SubShield local)",
+    req: `{
+  "method": "GET",
+  "url": "/api/subscriptions",
+  "description": "Retorna assinaturas detectadas e higienizadas pelo SubShield"
+}`,
+    res: null,
+    fetchUrl: "/api/subscriptions",
+    status: "200 OK",
+    statusClass: "status-ok"
+  }
+};
+
+let currentEndpoint = 'consent_create';
+
+function loadEndpoint(key) {
+  currentEndpoint = key;
+  const ep = ENDPOINTS[key];
+  document.querySelectorAll('.endpoint-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('console-title').textContent = ep.title;
+  document.getElementById('req-view').textContent = ep.req;
+  if (ep.res) {
+    document.getElementById('res-view').textContent = ep.res;
+  } else {
+    document.getElementById('res-view').textContent = '// Clique ▶ Executar para buscar dados reais…';
+  }
+  document.getElementById('status-badge').textContent = ep.status;
+  document.getElementById('status-badge').className = `response-status ${ep.statusClass}`;
+}
+
+async function runCall() {
+  const ep = ENDPOINTS[currentEndpoint];
+  const resView = document.getElementById('res-view');
+
+  if (ep.fetchUrl) {
+    resView.textContent = '// Carregando…';
+    try {
+      const res = await fetch(ep.fetchUrl);
+      const data = await res.json();
+      resView.textContent = JSON.stringify(data, null, 2);
+      document.getElementById('status-badge').textContent = ep.status;
+      document.getElementById('status-badge').className = `response-status ${ep.statusClass}`;
+      toast('Chamada executada com sucesso!', 'success');
+    } catch(e) {
+      resView.textContent = `// Erro: ${e.message}`;
+      toast('Erro na chamada', 'error');
+    }
+  } else {
+    resView.textContent = ep.res;
+    document.getElementById('status-badge').textContent = ep.status;
+    document.getElementById('status-badge').className = `response-status ${ep.statusClass}`;
+    toast(`Simulando: ${ep.title}`, 'success');
+  }
+}
+
+function clearConsole() {
+  document.getElementById('req-view').textContent = '// Console limpo…';
+  document.getElementById('res-view').textContent = '// Selecione um endpoint e clique ▶ Executar';
+}
+</script>
+{% endblock %}

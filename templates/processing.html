@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Processando - Vampiro da Recorrência{% endblock %}
+{% block shell_class %}theme-dark{% endblock %}
+{% block bottom_nav %}{% endblock %}
+
+{% block content %}
+<div style="min-height:72vh;display:grid;place-items:center;text-align:center;">
+  <div style="width:100%;">
+    <div class="avatar nubank" style="width:88px;height:88px;margin:0 auto 34px;font-size:34px;">Vr</div>
+    <div style="display:inline-flex;gap:10px;align-items:center;font-size:18px;font-weight:850;">
+      <span class="spinner" style="border-color:rgba(255,255,255,.45);border-top-color:#fff;"></span>
+      <span>Lendo extratos conectados</span>
+    </div>
+    <p style="max-width:330px;margin:14px auto 40px;color:rgba(255,255,255,.9);font-size:14px;line-height:1.45;">Obtendo autenticação para os bancos selecionados, aguarde um momento</p>
+    <div style="height:56px;border-radius:19px;background:rgba(255,255,255,.36);margin:13px 0;"></div>
+    <div style="height:56px;border-radius:19px;background:rgba(255,255,255,.36);margin:13px 0;"></div>
+    <div style="height:56px;border-radius:19px;background:rgba(255,255,255,.36);margin:13px 0;"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  setTimeout(() => window.location.href = "{{ url_for('dashboard') }}", 1500);
+</script>
+{% endblock %}

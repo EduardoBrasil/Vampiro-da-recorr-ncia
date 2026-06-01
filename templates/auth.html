@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Autenticacao - Vampiro da Recorrência{% endblock %}
+{% block shell_class %}theme-dark{% endblock %}
+{% block bottom_nav %}{% endblock %}
+
+{% block extra_style %}
+<style>
+  .auth-list { display: grid; gap: 12px; margin: 28px 0; }
+  .auth-card { border-radius: 18px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.12); padding: 16px; display: flex; gap: 12px; align-items: center; }
+  .auth-card strong { display: block; }
+  .auth-card span { color: rgba(255,255,255,.78); font-size: 12px; }
+  .mode-grid { display: grid; gap: 10px; margin-top: 18px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="connect-title" style="margin:0 0 8px;font-size:25px;">Biometria bancaria</h1>
+<p class="connect-copy" style="margin:0;color:rgba(255,255,255,.86);font-size:14px;line-height:1.45;">Vamos abrir a autenticação segura dos bancos selecionados para concluir a autorização de leitura.</p>
+
+<section class="auth-list">
+  {% for bank in banks %}
+    <article class="auth-card">
+      <div class="avatar {{ bank.class }}">{{ bank.initials }}</div>
+      <div>
+        <strong>{{ bank.name }}</strong>
+        <span>OAuth2 + biometria no app do banco</span>
+      </div>
+    </article>
+  {% endfor %}
+</section>
+
+<form method="post" action="{{ url_for('auth_start') }}" class="mode-grid">
+  <button class="primary-btn" name="mode" value="success">Concluir autenticacao</button>
+</form>
+{% endblock %}

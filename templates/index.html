@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Vampiro da Recorrência — SubShield{% endblock %}
+
+{% block extra_style %}
+<style>
+.hero {
+  max-width: 720px;
+  padding: 60px 0 40px;
+  animation: fadeUp 0.6s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--purple2);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--purple);
+}
+
+.hero h1 {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  margin-bottom: 20px;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, #a78bfa, #ef4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+  font-size: 17px;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 540px;
+  margin-bottom: 36px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139,92,246,0.4), transparent);
+}
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--purple2);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-label { font-size: 13px; color: var(--muted); }
+
+.research-card {
+  margin-top: 48px;
+  animation: fadeUp 0.6s 0.3s ease both;
+}
+.research-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+.research-item {
+  padding: 16px;
+  background: rgba(139,92,246,0.06);
+  border: 1px solid rgba(139,92,246,0.1);
+  border-radius: 10px;
+}
+.research-pct {
+  font-family: 'Syne', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--purple2);
+}
+.research-text { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <div class="hero-eyebrow">MVP 1.0 · Open Finance Fase 2</div>
+  <h1>Chega de pagar<br>por <em>vampiros</em><br>esquecidos.</h1>
+  <p>
+    O SubShield conecta aos seus bancos via Open Finance e varre automaticamente
+    suas assinaturas ativas — aquelas que você esqueceu e ainda estão sugando seu dinheiro
+    todo mês.
+  </p>
+
+  {% if connected_banks %}
+  <a href="{{ url_for('dashboard') }}" class="btn btn-primary" style="font-size:15px;padding:14px 28px;">
+    📊 Ver meu Dashboard
+  </a>
+  {% else %}
+  <a href="{{ url_for('connect') }}" class="btn btn-primary" style="font-size:15px;padding:14px 28px;">
+    🔗 Conectar meu banco — É grátis
+  </a>
+  {% endif %}
+  &nbsp;
+  <a href="{{ url_for('playground') }}" class="btn btn-ghost">🧪 Open Finance Playground</a>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-num">R$796</div>
+    <div class="stat-label">média de gastos invisíveis por ano identificados</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">8.2<span style="font-size:18px;color:var(--muted)">/10</span></div>
+    <div class="stat-label">nível de frustração dos usuários com cobranças surpresa</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">84%</div>
+    <div class="stat-label">dos usuários autorizariam Open Finance para rastrear assinaturas</div>
+  </div>
+</div>
+
+<div class="research-card card" style="margin-top:48px;">
+  <div class="section-label">📋 Discovery · 50 entrevistas reais</div>
+  <div class="research-grid">
+    <div class="research-item">
+      <div class="research-pct">76%</div>
+      <div class="research-text">já descobriram cobrança de serviço que não usavam há mais de 3 meses</div>
+    </div>
+    <div class="research-item">
+      <div class="research-pct">64%</div>
+      <div class="research-text">mantêm assinatura indesejada por preguiça/burocracia do cancelamento</div>
+    </div>
+    <div class="research-item">
+      <div class="research-pct">42%</div>
+      <div class="research-text">não reconhecem o código da cobrança na fatura do cartão</div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:48px;">
+  <div class="section-label">⚡ Como funciona · 3 passos</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:0;">
+    <div class="card" style="padding:20px;">
+      <div style="font-size:28px;margin-bottom:12px;">🔗</div>
+      <strong style="font-family:'Syne',sans-serif;font-size:16px;">1. Conecte seu banco</strong>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6;">
+        Via Open Finance regulado pelo Banco Central. Apenas leitura — nunca movimentamos seu dinheiro.
+      </p>
+    </div>
+    <div class="card" style="padding:20px;">
+      <div style="font-size:28px;margin-bottom:12px;">🧹</div>
+      <strong style="font-family:'Syne',sans-serif;font-size:16px;">2. Identificamos tudo</strong>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6;">
+        Nossa engine limpa os códigos confusos da fatura (tipo <span class="mono" style="font-size:12px;">EBNSPOTIFY</span>) e exibe o nome real.
+      </p>
+    </div>
+    <div class="card" style="padding:20px;">
+      <div style="font-size:28px;margin-bottom:12px;">🔔</div>
+      <strong style="font-family:'Syne',sans-serif;font-size:16px;">3. Alertas preditivos</strong>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6;">
+        Avisamos 24h antes de cada cobrança e quando um free-trial estiver prestes a virar cobrança.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

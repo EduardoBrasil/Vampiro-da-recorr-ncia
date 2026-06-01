@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Vampiro da Recorrência{% endblock %}</title>
+  <style>
+    :root {
+      --ink: #061026;
+      --muted: #5e6b82;
+      --soft: #eef4fb;
+      --line: #dfe7f0;
+      --panel: #ffffff;
+      --navy: #091a4a;
+      --blue: #3159df;
+      --blue-2: #4e72ff;
+      --green: #0aaa66;
+      --red: #e80f24;
+      --amber: #ffb20d;
+      --cyan: #11bfd0;
+      --shadow: 0 12px 28px rgba(20, 38, 72, .08);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #dfe7f0;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+
+    .app-shell {
+      width: min(100%, 444px);
+      min-height: 100vh;
+      margin: 0 auto;
+      background: #f6fbff;
+      position: relative;
+      overflow-x: hidden;
+      box-shadow: 0 0 0 1px rgba(10, 25, 60, .08);
+    }
+
+    .app-shell.theme-dark {
+      background: linear-gradient(180deg, #071847 0%, #243394 100%);
+      color: #fff;
+    }
+
+    .app-main {
+      min-height: 100vh;
+      padding: 26px 16px 96px;
+    }
+
+    .theme-dark .app-main { padding: 44px 24px 28px; }
+
+    .brand-kicker {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #1c3766;
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .brand-spark {
+      width: 24px;
+      height: 24px;
+      display: inline-grid;
+      place-items: center;
+    }
+
+    .brand-logo {
+      width: 24px;
+      height: 24px;
+      display: block;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+      letter-spacing: 0;
+      font-weight: 800;
+    }
+
+    .muted { color: var(--muted); }
+
+    .summary-card {
+      margin-top: 26px;
+      border-radius: 24px;
+      padding: 26px 24px 24px;
+      background: linear-gradient(135deg, #071846 0%, #28319a 100%);
+      color: #fff;
+      box-shadow: 0 18px 36px rgba(11, 28, 91, .18);
+    }
+
+    .summary-label { font-size: 14px; margin-bottom: 4px; }
+    .summary-total {
+      font-size: 38px;
+      line-height: 1;
+      font-weight: 850;
+      letter-spacing: 0;
+      margin-bottom: 18px;
+    }
+
+    .summary-divider {
+      height: 1px;
+      background: rgba(255,255,255,.18);
+      margin: 0 0 18px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: end;
+    }
+
+    .summary-small { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; opacity: .8; }
+    .summary-annual { font-size: 19px; font-weight: 800; margin-top: 4px; }
+    .summary-note { font-size: 11px; text-align: right; line-height: 1.25; opacity: .9; }
+
+    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 0 13px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(255,255,255,.18);
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .chip-success { background: #0aaa66; }
+    .chip-warning { background: var(--amber); color: #071026; }
+    .chip-danger { background: #ffe5ea; color: var(--red); }
+    .chip-muted { background: #eef3f9; color: #41516a; }
+    .chip-outline { background: #ecfbf4; color: #21a36e; }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 31px 0 10px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .section-count { font-size: 12px; color: #40506b; white-space: nowrap; }
+
+    .item-list { display: grid; gap: 14px; }
+
+    .sub-card,
+    .plain-card {
+      background: var(--panel);
+      border: 1px solid #e8eef5;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .sub-card {
+      min-height: 82px;
+      padding: 16px 12px 16px 16px;
+      display: grid;
+      grid-template-columns: 48px 1fr auto 20px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 850;
+      letter-spacing: 0;
+      flex: none;
+    }
+
+    .avatar.netflix { background: #e80f24; }
+    .avatar.spotify { background: #1db954; }
+    .avatar.canva { background: #11bfd0; }
+    .avatar.nubank { background: linear-gradient(135deg, #8a05be, #bc1dd8); }
+    .avatar.itau, .avatar.inter { background: #ff7900; }
+    .avatar.bradesco { background: #e40d35; }
+    .avatar.default { background: #8190a7; }
+
+    .sub-title-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      margin-bottom: 7px;
+    }
+
+    .sub-title {
+      font-size: 16px;
+      line-height: 1.15;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sub-title.dim { color: #9aa4b3; }
+    .sub-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sub-price { font-size: 15px; font-weight: 850; white-space: nowrap; }
+    .chevron { color: #7a879b; font-size: 26px; line-height: 1; }
+
+    .processing-card {
+      min-height: 82px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      border: 1px dashed #d8e2ee;
+      border-radius: 18px;
+      background: #f0f6fd;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #cddbf2;
+      border-top-color: #3566ff;
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+      flex: none;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .bottom-nav {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      width: min(100%, 444px);
+      transform: translateX(-50%);
+      height: 64px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      background: #fff;
+      border-top: 1px solid #dae4ef;
+      z-index: 20;
+    }
+
+    .theme-dark .bottom-nav { display: none; }
+
+    .nav-link {
+      display: grid;
+      justify-items: center;
+      gap: 4px;
+      color: #536076;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .nav-link.active { color: #245de8; }
+    .nav-icon { width: 23px; height: 23px; }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 26px;
+    }
+
+    .back-btn,
+    .circle-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid #e1e9f2;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      color: #071026;
+      cursor: pointer;
+      flex: none;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .dark-btn {
+      width: 100%;
+      min-height: 48px;
+      border: 0;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 18px;
+      cursor: pointer;
+      font-weight: 850;
+      font-size: 15px;
+    }
+
+    .primary-btn { color: #fff; background: linear-gradient(135deg, #3159df, #4e72ff); }
+    .secondary-btn { background: #eef3f8; color: #0b1730; }
+    .dark-btn { background: #071026; color: #fff; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 78px;
+      width: min(calc(100% - 32px), 412px);
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 50;
+      border-radius: 14px;
+      background: #071026;
+      color: #fff;
+      padding: 13px 16px;
+      font-size: 13px;
+      transition: .25s ease;
+    }
+
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .account-menu {
+      position: absolute;
+      top: 18px;
+      right: 16px;
+      z-index: 30;
+    }
+
+    .account-toggle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid #e1e9f2;
+      background: #fff;
+      color: #071026;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(20, 38, 72, .08);
+    }
+
+    .theme-dark .account-toggle {
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.14);
+      color: #fff;
+      box-shadow: none;
+    }
+
+    .account-panel {
+      position: absolute;
+      right: 0;
+      top: 46px;
+      width: 210px;
+      border-radius: 16px;
+      background: #fff;
+      color: #061026;
+      border: 1px solid #e1e9f2;
+      box-shadow: 0 18px 36px rgba(20, 38, 72, .16);
+      padding: 8px;
+      display: none;
+    }
+
+    .account-menu.open .account-panel { display: block; }
+
+    .account-name {
+      padding: 10px 10px 8px;
+      border-bottom: 1px solid #edf2f7;
+      margin-bottom: 4px;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .account-email {
+      display: block;
+      margin-top: 3px;
+      color: #5e6b82;
+      font-size: 11px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .account-item {
+      min-height: 38px;
+      border-radius: 12px;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #0b1730;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .account-item:hover { background: #eef4fb; }
+
+    @media (min-width: 860px) {
+      body {
+        display: grid;
+        place-items: start center;
+        padding: 24px 0;
+      }
+
+      .app-shell {
+        min-height: calc(100vh - 48px);
+        border-radius: 28px;
+      }
+
+      .bottom-nav {
+        bottom: 24px;
+        border-radius: 0 0 28px 28px;
+      }
+    }
+  </style>
+  {% block extra_style %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell {% block shell_class %}{% endblock %}">
+    {% if session.get('user') and request.endpoint not in ['login', 'register'] %}
+    <div class="account-menu" id="account-menu">
+      <button class="account-toggle" type="button" onclick="toggleAccountMenu()" aria-label="Abrir menu da conta">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="account-panel">
+        <div class="account-name">
+          {{ session.user.name }}
+          <span class="account-email">{{ session.user.email }}</span>
+        </div>
+        <a class="account-item" href="{{ url_for('profile') }}">Perfil</a>
+        <a class="account-item" href="{{ url_for('logout') }}">Sair do app</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <main class="app-main">
+      {% block content %}{% endblock %}
+    </main>
+
+    {% block bottom_nav %}
+    <nav class="bottom-nav" aria-label="Navegação principal">
+      <a class="nav-link {% if request.endpoint in ['index', 'dashboard', 'subscription_detail', 'manual_review'] %}active{% endif %}" href="{{ url_for('dashboard') }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 11.4 12 4l9 7.4v7.2a1.4 1.4 0 0 1-1.4 1.4h-4.1v-5.7h-7V20H4.4A1.4 1.4 0 0 1 3 18.6v-7.2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+        <span>Início</span>
+      </a>
+      <a class="nav-link {% if request.endpoint in ['connect', 'connections'] %}active{% endif %}" href="{{ url_for('connections') }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M9.5 8H7.8a4.2 4.2 0 0 0 0 8h3.4M14.5 8h1.7a4.2 4.2 0 0 1 0 8h-3.4M9.6 12h4.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span>Conexões</span>
+      </a>
+      <a class="nav-link {% if request.endpoint == 'notifications' %}active{% endif %}" href="{{ url_for('notifications') }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span>Alertas</span>
+      </a>
+      <a class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+        <span>Perfil</span>
+      </a>
+    </nav>
+    {% endblock %}
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    function toast(message) {
+      const el = document.getElementById('toast');
+      el.textContent = message;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function toggleAccountMenu() {
+      document.getElementById('account-menu')?.classList.toggle('open');
+    }
+
+    document.addEventListener('click', (event) => {
+      const menu = document.getElementById('account-menu');
+      if (menu && !menu.contains(event.target)) menu.classList.remove('open');
+    });
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

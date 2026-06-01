@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Vampiro da Recorrência{% endblock %}
+
+{% block extra_style %}
+<style>
+  .segmented { display:flex; background:#eaf1fa; border-radius:999px; padding:4px; margin-top:16px; }
+  .segmented button { flex:1; min-height:32px; border:0; border-radius:999px; background:transparent; color:#536076; font-weight:800; font-size:13px; cursor:pointer; }
+  .segmented button.active { background:#fff; color:#245de8; box-shadow:0 4px 12px rgba(20,38,72,.08); }
+  .notice { border-radius:14px; padding:12px; margin-top:12px; font-size:12px; line-height:1.4; }
+  .notice.danger { background:#ffe8ec; color:#9a0616; }
+  .notice.warn { background:#fff7df; color:#5c4200; }
+  .summary-card { padding:18px 18px 20px; border-radius:20px; background:linear-gradient(180deg, #2b62ed 0%, #1f4dd4 100%); border:1px solid rgba(255,255,255,.14); margin-top:20px; color:#fff; }
+  .summary-label { font-size:13px; color:rgba(255,255,255,.85); margin-bottom:6px; }
+  .summary-total { font-size:30px; font-weight:700; margin-bottom:10px; color:#fff; }
+  .summary-divider { height:1px; background:rgba(255,255,255,.16); margin:10px 0; }
+  .summary-grid { display:grid; gap:10px; font-size:12px; color:rgba(255,255,255,.85); }
+  .summary-annual { font-size:16px; font-weight:700; margin-top:4px; color:#fff; }
+  .summary-note { color:rgba(255,255,255,.75); }
+  .chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .chip { display:inline-flex; align-items:center; height:26px; padding:0 10px; font-size:11px; border-radius:999px; background:#f4f7fb; color:#2f3e58; }
+  .chip-success { background:#e6f8ee; color:#166a2e; }
+  .chip-outline { background:transparent; border:1px solid #d7e1ef; }
+  .push-strip { display:grid; gap:8px; margin-top:14px; }
+  .push-card { border-radius:14px; padding:12px; background:#fff; border:1px solid #e8eef5; display:flex; justify-content:space-between; gap:10px; font-size:12px; }
+  .push-card strong { font-size:13px; }
+  .sub-card, .processing-card { padding:12px; gap:10px; border-radius:16px; margin-bottom:10px; }
+  .sub-card { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #e8eef5; }
+  .processing-card { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #f0f4f8; }
+  .sub-title { font-size:13px; font-weight:700; }
+  .sub-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; color:#6f7d95; font-size:11px; }
+  .sub-price { font-size:14px; font-weight:700; color:#1f2d45; min-width:75px; text-align:right; }
+  .chevron { color:#9aa3b8; font-size:14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="brand-kicker"><span class="brand-spark"><img src="{{ url_for('static', filename='img/vampiro-logo.png') }}" alt="Vampiro da Recorrência" class="brand-logo"></span><span>Vampiro da Recorrência</span></div>
+<h1 class="page-title">Olá {{ session.user.name }} <span aria-hidden="true">👋</span></h1>
+
+{% if failed_banks %}
+  <div class="notice danger">Conexão falhou em um banco. Dados em modo leitura com cache recente. Acesse Conexões para reautorizar.</div>
+{% endif %}
+
+<section class="summary-card" aria-label="Resumo financeiro">
+  <div class="summary-label" id="total-label">Total gasto este mês</div>
+  <div class="summary-total" id="total-value">{{ total_monthly|money }}</div>
+  <div class="summary-divider"></div>
+  <div class="summary-grid">
+    <div>
+      <div class="summary-small">Projeção anual</div>
+      <div class="summary-annual">{{ total_annual|money }}</div>
+    </div>
+    <div class="summary-note">Soma consolidada dos bancos ativos em tempo real</div>
+  </div>
+  <div class="chip-row">
+    <span class="chip">{{ subscriptions|selectattr("clean_name")|list|length }} assinaturas ativas</span>
+    {% if saved_monthly %}<span class="chip chip-success">Economizado {{ saved_monthly|money }} / mês</span>{% endif %}
+    {% if saved_annual %}<span class="chip chip-success">Economizado {{ saved_annual|money }} / ano</span>{% endif %}
+    {% if last_scan_at %}<span class="chip chip-outline">Última varredura {{ last_scan_at }}</span>{% endif %}
+  </div>
+</section>
+
+<div class="segmented" role="tablist">
+  <button class="active" type="button" onclick="setPeriod('monthly', this)">Mensal</button>
+  <button type="button" onclick="setPeriod('annual', this)">Anual</button>
+</div>
+
+{% if pushes %}
+<section class="push-strip" aria-label="Alertas recentes">
+  {% for push in pushes[:2] %}
+    <a class="push-card" href="{% if push.subscription_id %}{{ url_for('subscription_detail', sub_id=push.subscription_id) }}{% else %}{{ url_for('notifications') }}{% endif %}">
+      <div>
+        <strong style="font-size:13px;">{{ push.title }}</strong>
+        <div class="muted" style="font-size:12px;margin-top:3px;">{{ push.body }}</div>
+      </div>
+      <span class="chevron">›</span>
+    </a>
+  {% endfor %}
+</section>
+{% endif %}
+
+<div class="section-head">
+  <h2>Suas assinaturas</h2>
+  <span class="section-count">{{ subscriptions|length }} encontradas</span>
+</div>
+
+<section class="item-list">
+  {% for sub in subscriptions %}
+    {% if sub.status == "processing" %}
+      <a class="processing-card" href="{{ url_for('manual_review', sub_id=sub.id) }}">
+        <span class="spinner" aria-hidden="true"></span>
+        <div>
+          <div class="sub-title" style="font-size:14px;">Processamento manual</div>
+          <div class="muted" style="font-size:12px;margin-top:4px;">Nao identificamos {{ sub.descriptor }} em 10s. Ajude e ganhe pontos.</div>
+        </div>
+      </a>
+    {% else %}
+      <a class="sub-card" href="{{ url_for('subscription_detail', sub_id=sub.id) }}">
+        <div class="avatar {{ sub.logo_class }}">{{ sub.initial }}</div>
+        <div style="min-width:0;">
+          <div class="sub-title-row">
+            <div class="sub-title">{{ sub.clean_name }}</div>
+            {% if sub.status == "trial" %}<span class="chip chip-warning" style="height:20px;min-height:20px;padding:0 8px;font-size:10px;">Teste</span>{% endif %}
+          </div>
+          <div class="sub-meta">
+            {% if sub.bank_name %}
+              <span class="chip chip-muted" style="height:23px;min-height:23px;font-size:11px;">Em {{ sub.bank_name }}</span>
+            {% endif %}
+            {% if sub.status == "trial" %}
+              <span class="chip chip-warning" style="height:23px;min-height:23px;font-size:11px;">Fim do trial em 24h</span>
+            {% else %}
+              <span class="chip chip-muted" style="height:23px;min-height:23px;font-size:11px;">Próx. {{ sub.next_billing }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="sub-price">{{ sub.amount|money }}</div>
+        <div class="chevron">›</div>
+      </a>
+    {% endif %}
+  {% endfor %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const monthly = "{{ total_monthly|money }}";
+  const annual = "{{ total_annual|money }}";
+  function setPeriod(period, btn) {
+    document.querySelectorAll('.segmented button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('total-label').textContent = period === 'monthly' ? 'Total gasto este mês' : 'Total projetado no ano';
+    document.getElementById('total-value').textContent = period === 'monthly' ? monthly : annual;
+  }
+</script>
+{% endblock %}
