@@ -54,7 +54,8 @@ def app_state():
     email = current_email()
     if not email:
         return copy.deepcopy(DEFAULT_APP_STATE)
-    return user_repository.app_state(email)
+    current_s = user_repository.app_state(email)
+    return current_s if current_s is not None else copy.deepcopy(DEFAULT_APP_STATE)
 
 
 def save_app_state(state):
@@ -89,6 +90,14 @@ def failed_banks():
 
 def revoked_banks():
     return set(app_state().get("revoked_banks", []))
+
+
+def total_economy():
+    """Calcula o total economizado (mensal e anual) com base nas assinaturas otimizadas."""
+    opt_ids = optimized_ids()
+    saved_monthly = sum(abs(tx["amount"]) for tx in RAW_TRANSACTIONS if tx["id"] in opt_ids)
+    saved_annual = round(saved_monthly * 12, 2)
+    return saved_monthly, saved_annual
 
 
 def consent_log():

@@ -212,14 +212,14 @@ def onboarding():
             return render_template("onboarding.html", banks=BANKS, error="Selecione ao menos um banco.", terms_version=TERMS_VERSION)
         if request.form.get("network") == "offline":
             return render_template("onboarding.html", banks=BANKS, error="Sem internet. Verifique sua conexao e tente novamente.", terms_version=TERMS_VERSION, selected=selected)
-        state = app_state()
-        state["selected_banks"] = selected
-        state["consent_log"] = {
+        user_state = app_state()
+        user_state["selected_banks"] = selected
+        user_state["consent_log"] = {
             "timestamp": now_br(),
             "terms_version": TERMS_VERSION,
             "banks": selected,
         }
-        save_app_state(state)
+        save_app_state(user_state)
         return redirect(url_for("auth"))
     return render_template("onboarding.html", banks=BANKS, terms_version=TERMS_VERSION, selected=selected_bank_ids())
 
@@ -246,8 +246,8 @@ def auth_collect_cpf():
     if not consent_log():
         return redirect(url_for("onboarding"))
     
-    state = app_state()
-    if request.method == "GET" and "user_cpf_cnpj" in state:
+    user_state = app_state()
+    if request.method == "GET" and user_state and "user_cpf_cnpj" in user_state:
         selected = selected_bank_ids()
         if selected:
             return redirect(url_for("auth_review_consent", bank_id=selected[0]))
@@ -262,7 +262,18 @@ def auth_collect_cpf():
                 selected_banks=[bank_by_id(bid) for bid in selected_bank_ids() if bank_by_id(bid)],
                 error="CPF/CNPJ inválido. Informe um valor com 11 ou 14 dígitos.",
             )
-        
+
+        user_state["user_cpf_cnpj"] = cpf_cnpj_clean
+        save_app_state(user_state)
+        selected = selected_bank_ids()
+        if selected:
+            return redirect(url_for("auth_review_consent", bank_id=selected[0]))
+        return redirect(url_for("auth"))
+
+    return render_template(
+        "auth_cpf.html",
+        selected_banks=[bank_by_id(bid) for bid in selected_bank_ids() if bank_by_id(bid)],
+    )
 
 
 @app.route("/auth/review-consent/<bank_id>")
@@ -304,8 +315,8 @@ def mock_bank_authorize(bank_id):
 @app.route("/auth/confirm-consent/<bank_id>", methods=["POST"])
 def auth_confirm_consent(bank_id):
     """Step 2-3 continuation: Create consent and redirect to bank authorization"""
-    state = app_state()
-    if "user_cpf_cnpj" not in state:
+    user_state = app_state()
+    if "user_cpf_cnpj" not in user_state:
         return redirect(url_for("auth_collect_cpf"))
     
     bank = bank_by_id(bank_id)
@@ -313,22 +324,22 @@ def auth_confirm_consent(bank_id):
         return redirect(url_for("onboarding"))
     
     # Create the digitally signed consent request
-    consent_response = open_finance_provider.create_consent(bank_id, cpf_cnpj=state["user_cpf_cnpj"])
+    consent_response = open_finance_provider.create_consent(bank_id, cpf_cnpj=user_state["user_cpf_cnpj"])
     consent_id = consent_response.get("consent_id")
     deep_link = consent_response.get("deep_link") or f"bankapp://{bank_id}/oauth/{consent_id}"
     
     # Save consent metadata (step 2)
-    consents = state.get("oauth_consents", {})
+    consents = user_state.get("oauth_consents", {})
     consents[bank_id] = {
         "consent_id": consent_id,
         "bank_id": bank_id,
-        "cpf_cnpj": state["user_cpf_cnpj"],
+        "cpf_cnpj": user_state["user_cpf_cnpj"],
         "status": "AWAITING_AUTHORISATION",
         "created_at": now_br(),
         "provider": open_finance_provider.name,
     }
-    state["oauth_consents"] = consents
-    save_app_state(state)
+    user_state["oauth_consents"] = consents
+    save_app_state(user_state)
     
     # Redirect to bank authentication (step 3)
     return redirect(deep_link)
@@ -337,7 +348,7 @@ def auth_confirm_consent(bank_id):
 @app.route("/auth/callback/<bank_id>")
 def auth_callback(bank_id):
     """Step 5: Handle secure callback from bank with access token"""
-    state = app_state()
+    user_state = app_state()
     
     # Get callback parameters from bank
     consent_id = request.args.get("consentId")
@@ -346,8 +357,8 @@ def auth_callback(bank_id):
     
     # Handle errors from bank
     if error:
-        state["oauth_consents"][bank_id]["status"] = "REJECTED"
-        save_app_state(state)
+        user_state["oauth_consents"][bank_id]["status"] = "REJECTED"
+        save_app_state(user_state)
         add_push(
             "Autorização rejeitada",
             f"A autorização no {bank_by_id(bank_id)['name']} foi rejeitada ou expirou.",
@@ -358,15 +369,15 @@ def auth_callback(bank_id):
     
     # Verify consent status with provider (step 5 - get token)
     if consent_id and access_token:
-        consents = state.get("oauth_consents", {})
+        consents = user_state.get("oauth_consents", {})
         if bank_id in consents:
             # Save the access token securely (step 5)
             consents[bank_id]["consent_id"] = consent_id
             consents[bank_id]["access_token"] = access_token
             consents[bank_id]["status"] = "AUTHORISED"
             consents[bank_id]["authorized_at"] = now_br()
-            state["oauth_consents"] = consents
-            save_app_state(state)
+            user_state["oauth_consents"] = consents
+            save_app_state(user_state)
             
             # Create connection with the token
             create_connection(bank_id)
@@ -426,11 +437,11 @@ def connection_error(bank_id):
 
 @app.route("/retry/<bank_id>", methods=["POST"])
 def retry_connection(bank_id):
-    state = app_state()
+    user_state = app_state()
     failed = failed_banks()
     failed.discard(bank_id)
-    state["failed_banks"] = list(failed)
-    save_app_state(state)
+    user_state["failed_banks"] = list(failed)
+    save_app_state(user_state)
     create_connection(bank_id)
     ensure_demo_pushes()
     return redirect(url_for("processing"))
@@ -438,6 +449,7 @@ def retry_connection(bank_id):
 
 @app.route("/processing")
 def processing():
+    scan_for_recurring_subscriptions()
     return render_template("processing.html")
 
 
@@ -451,11 +463,10 @@ def dashboard():
     monthly, annual = dashboard_totals(items)
 
     ensure_demo_pushes()
-    state = app_state()
-    saved_monthly = sum(abs(tx["amount"]) for tx in RAW_TRANSACTIONS if tx["id"] in optimized_ids())
-    saved_annual = round(saved_monthly * 12, 2)
+    user_state = app_state()
+    saved_monthly, saved_annual = state.total_economy()
     dashboard_pushes = [
-        push for push in state.get("pushes", [])
+        push for push in user_state.get("pushes", [])
         if not push.get("read") and push["title"] != "Autorização revogada"
     ]
     return render_template(
@@ -470,8 +481,8 @@ def dashboard():
         optimized_count=len(optimized_ids()),
         saved_monthly=saved_monthly,
         saved_annual=saved_annual,
-        last_scan_at=state.get("last_scan_at"),
-        last_scan_count=state.get("last_scan_count"),
+        last_scan_at=user_state.get("last_scan_at"),
+        last_scan_count=user_state.get("last_scan_count"),
     )
 
 
@@ -480,7 +491,7 @@ def subscription_detail(sub_id):
     tx = next((item for item in RAW_TRANSACTIONS if item["id"] == sub_id), None)
     if not tx:
         return redirect(url_for("dashboard"))
-    sub = clean_transaction(tx)
+    sub = state.clean_transaction(tx)
     sheet = request.args.get("sheet")
     link_error = request.args.get("link_error") == "1"
     saved_monthly = request.args.get("saved_monthly")
@@ -505,11 +516,11 @@ def subscription_detail(sub_id):
 
 @app.route("/subscription/<sub_id>/optimize", methods=["POST"])
 def optimize_subscription(sub_id):
-    state = app_state()
+    user_state = app_state()
     optimized = optimized_ids()
     optimized.add(sub_id)
-    state["optimized_subscriptions"] = list(optimized)
-    save_app_state(state)
+    user_state["optimized_subscriptions"] = list(optimized)
+    save_app_state(user_state)
     tx = next((item for item in RAW_TRANSACTIONS if item["id"] == sub_id), None)
     monthly_saved = abs(tx["amount"]) if tx else 0
     annual_saved = monthly_saved * 12
@@ -558,7 +569,7 @@ def manual_review(sub_id):
         save_app_state(state)
         add_push("Obrigado pela ajuda", "Voce ganhou 120 pontos de fidelidade pela identificacao.", sub_id, "success")
         return redirect(url_for("dashboard"))
-    return render_template("manual.html", sub=clean_transaction(tx))
+    return render_template("manual.html", sub=state.clean_transaction(tx))
 
 
 @app.route("/connections")
@@ -702,16 +713,16 @@ def initiate_connection():
     consent_response = open_finance_provider.create_consent(bank_id)
     consent_id = consent_response.get("consent_id")
     deep_link = consent_response.get("deep_link") or f"bankapp://{bank_id}/oauth/{consent_id}"
-    state = app_state()
-    consents = state.get("oauth_consents", {})
+    user_state = app_state()
+    consents = user_state.get("oauth_consents", {})
     consents[bank_id] = {
         "consent_id": consent_id,
         "bank_id": bank_id,
         "created_at": now_br(),
         "provider": open_finance_provider.name,
     }
-    state["oauth_consents"] = consents
-    save_app_state(state)
+    user_state["oauth_consents"] = consents
+    save_app_state(user_state)
     # Redirect to bank authorization flow
     return redirect(deep_link)
 
@@ -738,8 +749,8 @@ def bulk_initiate_connection():
             "deep_link": deep_link,
             "status": consent_response.get("status", "AWAITING_AUTHORISATION"),
         })
-    state = app_state()
-    consents = state.get("oauth_consents", {})
+    user_state = app_state()
+    consents = user_state.get("oauth_consents", {})
     for payload in payloads:
         consents[payload["bank_id"]] = {
             "consent_id": payload["consent_id"],
@@ -747,8 +758,8 @@ def bulk_initiate_connection():
             "created_at": now_br(),
             "provider": open_finance_provider.name,
         }
-    state["oauth_consents"] = consents
-    save_app_state(state)
+    user_state["oauth_consents"] = consents
+    save_app_state(user_state)
     # Redirect to first bank authorization flow
     if first_deep_link:
         return redirect(first_deep_link)
@@ -757,7 +768,7 @@ def bulk_initiate_connection():
 
 @app.route("/api/dashboard-state")
 def dashboard_state():
-    state = app_state()
+    user_state = app_state()
     items = visible_subscriptions()
     monthly, annual = dashboard_totals(items)
     saved_amount = sum(abs(tx["amount"]) for tx in RAW_TRANSACTIONS if tx["id"] in optimized_ids())
@@ -766,13 +777,13 @@ def dashboard_state():
         "monthly_total": round(monthly, 2),
         "annual_total": round(annual, 2),
         "saved_amount": round(saved_amount, 2),
-        "last_scan_at": state.get("last_scan_at"),
-        "last_scan_count": state.get("last_scan_count", 0),
+        "last_scan_at": user_state.get("last_scan_at"),
+        "last_scan_count": user_state.get("last_scan_count", 0),
         "subscriptions": items,
         "connections": connected_banks(),
         "failed_banks": list(failed_banks()),
         "revoked_banks": list(revoked_banks()),
-        "alerts": state.get("pushes", []),
+        "alerts": user_state.get("pushes", []),
     })
 
 

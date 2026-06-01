@@ -127,9 +127,11 @@ class UserRepository:
 
     def app_state(self, email):
         user = self.get(email) or {}
-        state = copy.deepcopy(DEFAULT_APP_STATE)
-        state.update(user.get("app_state", {}))
-        return state
+        current_state = copy.deepcopy(DEFAULT_APP_STATE)
+        db_state = user.get("app_state")
+        if db_state and isinstance(db_state, dict):
+            current_state.update(db_state)
+        return current_state
 
     def save_app_state(self, email, state):
         user = self.get(email)
